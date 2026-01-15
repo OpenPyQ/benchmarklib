@@ -13,7 +13,6 @@ from tweedledum import BitVec
 
 from .base import SynthesisCompiler, clique_oracle
 from ..core import BaseProblem
-from ..problems import CliqueProblem
 
 logger = logging.getLogger("benchmarklib.compiler.truth_table")
 
@@ -46,6 +45,8 @@ class TruthTableCompiler(SynthesisCompiler):
         Returns:
             Phase-flip oracle quantum circuit
         """
+        from ..problems import CliqueProblem
+        
         if isinstance(problem, CliqueProblem):
             # support Clique problems directly
             return self._compile_clique(problem, **kwargs)
@@ -71,7 +72,7 @@ class TruthTableCompiler(SynthesisCompiler):
             return verifier.truth_table_synthesis()
 
 
-    def _compile_clique(self, problem: CliqueProblem, **kwargs) -> QuantumCircuit:
+    def _compile_clique(self, problem: "CliqueProblem", **kwargs) -> QuantumCircuit:
         """Compile clique problem using truth table synthesis."""
         clique_size = kwargs.get("clique_size")
         if clique_size is None:

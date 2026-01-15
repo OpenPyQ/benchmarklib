@@ -17,7 +17,7 @@ from qiskit import QuantumCircuit
 
 from .base import SynthesisCompiler
 from ..core import BaseProblem
-from ..problems import CliqueProblem
+
 
 logger = logging.getLogger("benchmarklib.compiler.classiq")
 
@@ -52,6 +52,7 @@ class ClassiqCompiler(SynthesisCompiler):
         Returns:
             Phase-flip oracle quantum circuit
         """
+        from ..problems import CliqueProblem
         # Determine which classical function to use based on problem type
         if isinstance(problem, CliqueProblem):
             return self._compile_clique(problem, **kwargs)
@@ -60,7 +61,7 @@ class ClassiqCompiler(SynthesisCompiler):
                 f"XAGCompiler doesn't support {problem.problem_type} problems yet"
             )
 
-    def _compile_clique(self, problem: CliqueProblem, **kwargs):
+    def _compile_clique(self, problem: "CliqueProblem", **kwargs):
         """Compile clique problem to oracle."""
 
         # extract info from problem and create graph

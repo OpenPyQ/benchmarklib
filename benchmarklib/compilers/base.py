@@ -20,11 +20,13 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 import numpy as np
+from sqlalchemy.ext.mutable import MutableDict
+from sqlalchemy.types import JSON
+from sqlalchemy.orm import mapped_column
 from qiskit import QuantumCircuit, transpile
 from qiskit_ibm_runtime import IBMBackend
 
 from ..core import BaseTrial, BenchmarkDatabase, BaseProblem
-from ..core.types import _BaseTrial
 
 logger = logging.getLogger("benchmarklib.compiler")
 
@@ -130,13 +132,17 @@ class SynthesisResult:
     extra_metrics: Dict[str, Any] = field(default_factory=dict)
 
 
-class SynthesisTrial(_BaseTrial):
+class SynthesisTrial(BaseTrial):
     """
     Trial for synthesis benchmarking.
 
     Extends BaseTrial to store synthesis-specific metrics while maintaining
     compatibility with the existing database infrastructure.
     """
+
+    __abstract__ = True
+
+    synthesis_result: Optional[SynthesisResult] = mapped_column(MutableDict.as_mutable(JSON), nullable=True)
 
     def __init__(
         self,

@@ -9,7 +9,6 @@ from tweedledum.synthesis import xag_cleanup, xag_synth
 
 from .base import SynthesisCompiler, clique_oracle
 from ..core import BaseProblem
-from ..problems import CliqueProblem
 
 logger = logging.getLogger("benchmarklib.compiler.xag")
 
@@ -46,6 +45,7 @@ class XAGCompiler(SynthesisCompiler):
         Returns:
             Phase-flip oracle quantum circuit
         """
+        from ..problems import CliqueProblem
         # Determine which classical function to use based on problem type
         if isinstance(problem, CliqueProblem) or problem.problem_type == "CLIQUE":
             return self._compile_clique(problem, **kwargs)
@@ -54,7 +54,7 @@ class XAGCompiler(SynthesisCompiler):
                 f"XAGCompiler doesn't support {problem.problem_type} problems yet"
             )
 
-    def _compile_clique(self, problem: CliqueProblem, **kwargs) -> QuantumCircuit:
+    def _compile_clique(self, problem: "CliqueProblem", **kwargs) -> QuantumCircuit:
         """Compile clique problem to oracle."""
         clique_size = kwargs.get("clique_size")
         if clique_size is None:

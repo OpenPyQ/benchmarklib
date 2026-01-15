@@ -2,7 +2,6 @@ import logging
 from typing import Dict, Optional, Union
 
 from .core import *  # noqa: F403
-from .core import _BenchmarkDatabase  # Temporary for migration
 
 from .problems import (
     CliqueProblem,

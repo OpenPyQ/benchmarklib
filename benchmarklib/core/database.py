@@ -36,7 +36,7 @@ from qiskit import QuantumCircuit, qpy
 from qiskit_ibm_runtime import RuntimeJobFailureError
 from qiskit.providers import Backend
 
-from .types import Base, BaseTrial, BaseProblem, _ProblemInstance, _BaseTrial
+from .types import Base, BaseTrial, BaseProblem
 from benchmarklib.pipeline.config import PipelineConfig
 
 # Configure logging
