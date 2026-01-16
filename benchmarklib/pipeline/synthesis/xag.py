@@ -6,18 +6,24 @@ import pygraphviz
 import networkx as nx
 from typing import Optional
 
-import tweedledum as td
 from qiskit import QuantumCircuit
-from tweedledum.bool_function_compiler import QuantumCircuitFunction
-from tweedledum.classical import optimize
-from tweedledum.passes import linear_resynth, parity_decomp
-from tweedledum.synthesis import xag_cleanup, xag_synth
-from tweedledum.utils import xag_export_dot
 
-from .synthesizer import Synthesizer, clique_oracle
+from .synthesizer import Synthesizer
 from ..registries import SynthesizerRegistry
 
 logger = logging.getLogger("benchmarklib.pipeline.synthesis.xag")
+
+try:
+    import tweedledum as td
+    from tweedledum.bool_function_compiler import QuantumCircuitFunction
+    from tweedledum.classical import optimize
+    from tweedledum.passes import linear_resynth, parity_decomp
+    from tweedledum.synthesis import xag_cleanup, xag_synth
+    from tweedledum.utils import xag_export_dot
+
+    from .clique_oracle import clique_oracle
+except ImportError:
+    logger.warning("Tweedledum not installed, XAG synthesis will not work.")
 
 
 @SynthesizerRegistry.register

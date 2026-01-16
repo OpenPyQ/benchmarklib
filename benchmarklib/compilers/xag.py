@@ -1,16 +1,22 @@
 import logging
 
-import tweedledum as td
-from qiskit import QuantumCircuit
-from tweedledum.bool_function_compiler import QuantumCircuitFunction
-from tweedledum.classical import optimize
-from tweedledum.passes import linear_resynth, parity_decomp
-from tweedledum.synthesis import xag_cleanup, xag_synth
 
-from .base import SynthesisCompiler, clique_oracle
+from qiskit import QuantumCircuit
+
+from .base import SynthesisCompiler
 from ..core import BaseProblem
+from benchmarklib.pipeline.synthesis.clique_oracle import clique_oracle
 
 logger = logging.getLogger("benchmarklib.compiler.xag")
+
+try:
+    import tweedledum as td
+    from tweedledum.bool_function_compiler import QuantumCircuitFunction
+    from tweedledum.classical import optimize
+    from tweedledum.passes import linear_resynth, parity_decomp
+    from tweedledum.synthesis import xag_cleanup, xag_synth
+except ImportError:
+    logger.warning("Tweedledum not installed, XAG compilation will not work.")
 
 
 class XAGCompiler(SynthesisCompiler):

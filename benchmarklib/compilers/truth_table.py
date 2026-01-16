@@ -4,18 +4,23 @@ import tempfile
 import importlib.util
 import os
 
-import tweedledum as td
 from qiskit import QuantumCircuit
-from tweedledum.bool_function_compiler import QuantumCircuitFunction, circuit_input
-from tweedledum.passes import linear_resynth, parity_decomp
-from tweedledum.synthesis import pkrm_synth
-from tweedledum import BitVec
 
-from .base import SynthesisCompiler, clique_oracle
+from .base import SynthesisCompiler
+from benchmarklib.pipeline.synthesis.clique_oracle import clique_oracle
 from ..core import BaseProblem
 
 logger = logging.getLogger("benchmarklib.compiler.truth_table")
 
+try:
+    import tweedledum as td
+
+    from tweedledum.bool_function_compiler import QuantumCircuitFunction, circuit_input
+    from tweedledum.passes import linear_resynth, parity_decomp
+    from tweedledum.synthesis import pkrm_synth
+    from tweedledum import BitVec
+except ImportError:
+    logger.warning("Tweedledum not installed, Truth Table compilation will not work.")
 
 class TruthTableCompiler(SynthesisCompiler):
     """
