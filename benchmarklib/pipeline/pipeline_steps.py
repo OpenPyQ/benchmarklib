@@ -157,8 +157,6 @@ class ReplaceCCXwithRCCX(PipelineStep):
 
                 ctrl_state_ops = []
                 for s, q in ctrl_state:
-                    print(f"{s}, {q}")
-
                     if s == "0":
                         ctrl_state_ops.append((XGate(), [q], ()))
 

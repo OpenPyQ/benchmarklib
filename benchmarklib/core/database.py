@@ -166,18 +166,45 @@ class DatabaseManager:
         with self.session() as session:
             results = session.execute(query).scalars().all()
             return results
+
+    def get_or_create(self, model: Type[Base], defaults: Dict[str, Any]={}, **kwargs):
+        """
+        Get or create a database record.
+
+        Args:
+            model: SQLAlchemy model class
+            defaults: Default values for creation
+            **kwargs: Filter criteria
+        """
+        with self.session() as session:
+            instance = session.execute(
+                select(model).filter_by(**kwargs)
+            ).scalars().first()
+            if instance:
+                session.expunge(instance)
+                return instance
+            else:
+                params = {**kwargs, **defaults}
+                instance = model(**params)
+                session.add(instance)
+                session.commit()
+                session.refresh(instance)
+                session.expunge(instance)
+                return instance
         
 
 class BackendPropertyManager(DatabaseManager):
-    def latest(self, backend: Backend, as_of: Optional[datetime] = None) -> Optional[BackendProperty]:
+    def latest(self, backend: Backend | str, as_of: Optional[datetime] = None) -> Optional[BackendProperty]:
         """
         Get the latest backend properties as of a specific date.
-
+        Args:
+            backend: Backend object or name
         Args:
             as_of: Date to filter properties (None for latest overall)
         """
+        backend_name = backend.name if isinstance(backend, Backend) else backend
         with self.session() as session:
-            query = select(BackendProperty).where(BackendProperty.backend_name == backend.name).order_by(BackendProperty.last_update_date.desc())
+            query = select(BackendProperty).where(BackendProperty.backend_name == backend_name).order_by(BackendProperty.last_update_date.desc())
             if as_of:
                 query = query.where(BackendProperty.last_update_date <= as_of)
             result = session.execute(query).scalars().first()

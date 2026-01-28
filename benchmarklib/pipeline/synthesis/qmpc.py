@@ -10,16 +10,6 @@ from typing import Optional
 import networkx as nx
 import pygraphviz
 from qiskit import QuantumCircuit
-from tweedledum import converters
-from tweedledum.bool_function_compiler.decorators import circuit_input
-from tweedledum.bool_function_compiler.quantum_circuit_function import (
-    QuantumCircuitFunction,
-)
-from tweedledum import BitVec
-from tweedledum.classical import optimize
-from tweedledum.passes import linear_resynth, parity_decomp
-from tweedledum.synthesis import xag_cleanup, xag_synth
-from tweedledum.utils import xag_export_dot
 
 from benchmarklib.pipeline.synthesis import Synthesizer
 from benchmarklib.pipeline.registries import SynthesizerRegistry
@@ -45,6 +35,20 @@ CLIQUE_VERIFIER_CONSTANTS = str(
 CLIQUE_VERIFIER_PY = str(QMPC_BASE_DIR / "quantum_benchmarks/clique_verifier.py")
 
 logger = logging.getLogger("benchmarklib.pipeline.synthesis.qmpc")
+
+try:
+    from tweedledum import converters
+    from tweedledum.bool_function_compiler.decorators import circuit_input
+    from tweedledum.bool_function_compiler.quantum_circuit_function import (
+        QuantumCircuitFunction,
+    )
+    from tweedledum import BitVec
+    from tweedledum.classical import optimize
+    from tweedledum.passes import linear_resynth, parity_decomp
+    from tweedledum.synthesis import xag_cleanup, xag_synth
+    from tweedledum.utils import xag_export_dot
+except ImportError:
+    logger.warning("Tweedledum not installed, QuantumMPC synthesis will not work.")
 
 
 class StreamToLogger(object):

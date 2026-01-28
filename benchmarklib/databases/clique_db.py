@@ -10,8 +10,9 @@ from typing import Any, Dict, List, Optional, TypeVar
 
 import networkx as nx
 
-from .. import CliqueProblem, BaseProblem
+from .. import BaseProblem
 from .problem_storage import ProblemStorage
+from ..problems.clique import CliqueProblem
 
 logger = logging.getLogger("benchmarklib.databases.clique_db")
 
