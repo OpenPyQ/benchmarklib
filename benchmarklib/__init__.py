@@ -3,11 +3,6 @@ from typing import Dict, Optional, Union
 
 from .core import *  # noqa: F403
 
-from .problems import (
-    CliqueProblem,
-    CliqueTrial,
-)
-
 # New synthesis benchmarking imports
 from .compilers import (
     ClassiqCompiler,
@@ -27,7 +22,7 @@ from .runners import (
 
 from . import pipeline
 
-from . import algorithms, analysis, databases, pipeline
+from . import algorithms, analysis, pipeline
 
 
 QUANTUM_BENCHMARKING_LOGGER = __name__

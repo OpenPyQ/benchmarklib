@@ -143,7 +143,7 @@ class CliqueProblem(BaseProblem):
         clique_counts: Precomputed clique counts (optional, will compute if needed)
         instance_id: Database ID (None for unsaved instances)
     """
-    __tablename__ = "clique_problems"
+    __tablename__ = "benchmarklib_clique_problems"
     TrialClass = "CliqueTrial"
     graph: Mapped[str] = mapped_column(String, unique=True)
     nodes: Mapped[int]
@@ -291,7 +291,7 @@ class CliqueProblem(BaseProblem):
 class CliqueTrial(TrialCircuitMetricsMixin, BaseTrial):
     """Trial for clique detection using Grover's algorithm."""
 
-    __tablename__ = "clique_trials"
+    __tablename__ = "benchmarklib_clique_trials"
     ProblemClass = CliqueProblem
 
     grover_iterations: Mapped[Optional[int]]
@@ -368,7 +368,7 @@ class CliqueTrial(TrialCircuitMetricsMixin, BaseTrial):
 class CliqueOracleTrial(TrialCircuitMetricsMixin, BaseTrial):
     """Trial for measuring the output to a specific input to a clique oracle."""
 
-    __tablename__ = "clique_oracle_trials"
+    __tablename__ = "benchmarklib_clique_oracle_trials"
     ProblemClass = CliqueProblem
 
     input_state: Mapped[str]

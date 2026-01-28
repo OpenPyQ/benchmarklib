@@ -1,6 +1,8 @@
 from __future__ import annotations  # needed for type hinting without circular imports
 
+import importlib
 import logging
+import os
 import tempfile
 import pygraphviz
 import networkx as nx
@@ -15,7 +17,8 @@ logger = logging.getLogger("benchmarklib.pipeline.synthesis.xag")
 
 try:
     import tweedledum as td
-    from tweedledum.bool_function_compiler import QuantumCircuitFunction
+    from tweedledum.bool_function_compiler import QuantumCircuitFunction, circuit_input
+    from tweedledum import BitVec, converters
     from tweedledum.classical import optimize
     from tweedledum.passes import linear_resynth, parity_decomp
     from tweedledum.synthesis import xag_cleanup, xag_synth
@@ -64,10 +67,61 @@ class XAGSynthesizer(Synthesizer):
         from ...problems import CliqueProblem
         if isinstance(problem, CliqueProblem) or problem.problem_type == "CLIQUE":
             return self._compile_clique(problem, **kwargs)
-        else:
+        
+        src = problem.get_verifier_src()
+        if not src:
             raise NotImplementedError(
-                f"XAGCompiler doesn't support {problem.problem_type} problems yet"
+                f"XAGCompiler requires a classical verifier function for {problem.problem_type} problems"
             )
+        
+        src = src.replace("def verify(inpt: Tuple[bool]) -> bool:", "def verify() -> BitVec(1):")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            module_name = "temp_boolean_func"
+            file_path = os.path.join(temp_dir, f"{module_name}.py")
+
+            with open(file_path, "w") as f:
+                f.write("from typing import *\n")
+                f.write("from tweedledum import BitVec\n")
+                f.write(src)
+
+            spec = importlib.util.spec_from_file_location(module_name, file_path)
+            temp_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(temp_module)
+            qc_func = QuantumCircuitFunction(circuit_input(inpt=BitVec(problem.number_of_input_bits()))(temp_module.verify))
+            
+        self.compilation_artifacts["source"] = qc_func.get_transformed_source()
+
+        # Get XAG and optionally optimize
+        xag = qc_func.logic_network()
+
+        logger.debug("Optimizing XAG...")
+        xag = xag_cleanup(xag)
+        optimize(xag)
+
+        fp = tempfile.NamedTemporaryFile()
+        logger.debug(f"Outputting XAG to tempfile {fp.name}")
+        xag_export_dot(xag, fp.name)
+        graphviz_str = fp.read()
+        logger.debug(graphviz_str)
+
+        agraph = pygraphviz.AGraph().from_string(graphviz_str)
+
+        self.compilation_artifacts["nxag"] = nx.nx_agraph.from_agraph(agraph)
+
+        # Synthesize
+        logger.debug("Synthesizing from XAG...")
+        td_circuit = xag_synth(xag)
+
+        # Apply Tweedledum optimization passes
+        logger.debug("Applying optimization passes...")
+        td_circuit = parity_decomp(td_circuit)
+        #td_circuit = linear_resynth(td_circuit)  # warning: linear_resynth occasionally produces invalid results (non-equivalent circuit)
+
+        # Convert to Qiskit
+        qiskit_circuit = converters.to_qiskit(td_circuit, circuit_type="gatelist")
+
+
+        return qiskit_circuit
 
     def _compile_clique(self, problem: CliqueProblem, **kwargs) -> QuantumCircuit:
         """Compile clique problem to oracle."""
