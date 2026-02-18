@@ -48,10 +48,8 @@ class BackendProperty(Base):
 
     backend_name: Mapped[str]
     last_update_date: Mapped[datetime]
-    gates_data: Mapped[List[Dict[str, Any]]] = mapped_column(JSON)
+    properties: Mapped[Dict[str, Any]] = mapped_column(MutableDict.as_mutable(JSON))
     
-    # can add other attributes when they become relevant
-
     # backend_name + last_update_date should be unique together
     __table_args__ = (
         UniqueConstraint("backend_name", "last_update_date", name="uq_backend_name_last_update"),
@@ -62,7 +60,7 @@ class BackendProperty(Base):
     
     def get_gate_errors(self) -> Dict[str, List[float]]:
         error_rates = {}
-        for d in self.gates_data:
+        for d in self.properties.get("gates", []):
             if d["gate"] not in error_rates:
                 error_rates[d["gate"]] = []
 
@@ -243,11 +241,10 @@ class BackendPropertyManager(DatabaseManager):
                         if backend_props.last_update_date.date() in existing_dates:
                             date += timedelta(days=1)
                             continue
-                        gates_data = [gate.to_dict() for gate in backend_props.gates]
                         bp = BackendProperty(
                             backend_name=backend.name,
                             last_update_date=backend_props.last_update_date,
-                            gates_data=json.loads(json.dumps(gates_data, default=str)),  # dump and load to ensure JSON serializability
+                            properties=json.loads(json.dumps(backend_props.to_dict(), default=str)),  # dump and load to ensure JSON serializability
                         )
                         session.add(bp)
                         session.commit()
@@ -655,13 +652,14 @@ class BenchmarkDatabase(DatabaseManager):
             results = session.execute(query).scalars().all()
             return list(results)
 
-    async def update_job_results(self, job_id: str, service) -> None:
+    async def update_job_results(self, job_id: str, service, result_register: Optional[str] = None) -> None:
         """
         Fetch and update results for a specific job.
 
         Args:
             job_id: IBM Quantum job ID
             service: QiskitRuntimeService instance
+            result_register: (Optional) "c", "meas", etc. to specify which register to extract counts from. Default: check "c", then "meas".
         """
 
         try:
@@ -711,7 +709,9 @@ class BenchmarkDatabase(DatabaseManager):
                     pub_result = results[job_pub_idx]
 
                     # Handle different result data structures
-                    if hasattr(pub_result.data, "c"):
+                    if result_register is not None:
+                        counts = getattr(pub_result.data, result_register).get_counts()
+                    elif hasattr(pub_result.data, "c"):
                         counts = pub_result.data.c.get_counts()
                     elif hasattr(pub_result.data, "meas"):
                         counts = pub_result.data.meas.get_counts()
@@ -737,13 +737,14 @@ class BenchmarkDatabase(DatabaseManager):
         except Exception as e:
             logger.error(f"Error updating trials for job {job_id}: {e}")
 
-    async def update_all_pending_results(self, service, batch_size: int = 5) -> None:
+    async def update_all_pending_results(self, service, batch_size: int = 5, result_register: Optional[str] = None) -> None:
         """
         Update all pending job results asynchronously.
 
         Args:
             service: QiskitRuntimeService instance
             batch_size: Number of concurrent job fetches
+            result_register: (Optional) "c", "meas", etc. to specify which register to extract counts from. Default: check "c", then "meas".
         """
         pending_jobs = self.get_pending_job_ids()
 
@@ -756,7 +757,7 @@ class BenchmarkDatabase(DatabaseManager):
         # Process jobs in batches to avoid overwhelming the API
         for i in range(0, len(pending_jobs), batch_size):
             batch = pending_jobs[i : i + batch_size]
-            tasks = [self.update_job_results(job_id, service) for job_id in batch]
+            tasks = [self.update_job_results(job_id, service, result_register=result_register) for job_id in batch]
 
             batch_num = i // batch_size + 1
             total_batches = (len(pending_jobs) + batch_size - 1) // batch_size
