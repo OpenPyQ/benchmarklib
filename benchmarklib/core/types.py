@@ -262,7 +262,7 @@ class BaseTrial(Base):
 
     ProblemClass: ClassVar[Type["BaseProblem"]]
 
-    compiler_name: Mapped[str] = mapped_column(String(255), index=True)
+    compiler_name: Mapped[Optional[str]] = mapped_column(String(255), index=True)
     job_id: Mapped[Optional[str]] = mapped_column(String(128), index=True)
     job_pub_idx: Mapped[Optional[int]]
     counts: Mapped[Optional[Dict[str, int]]] = mapped_column(MutableDict.as_mutable(JSON))
