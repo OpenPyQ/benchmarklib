@@ -1,5 +1,7 @@
 import multiprocessing
+import os
 import psutil
+import sys
 import time
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
@@ -18,8 +20,12 @@ class RunResult:
     memory_used_mb: Optional[float] = None
     error_message: Optional[str] = None
 
-def _worker_wrapper(func, args, kwargs, result_queue):
+def _worker_wrapper(func, args, kwargs, result_queue, silence_output=False):
     """Wrapper to catch exceptions and return them via queue"""
+    if silence_output:
+        devnull = open(os.devnull, 'w')
+        sys.stdout = devnull
+        sys.stderr = devnull
     try:
         result = func(*args, **kwargs)
         result_queue.put(("success", result))
@@ -32,7 +38,8 @@ def run_with_resource_limits(
     kwargs: dict = dict(),
     memory_limit_mb: Optional[float] = None,
     timeout_seconds: Optional[float] = None,
-    check_interval: float = 10.0
+    check_interval: float = 10.0,
+    silence_output: bool = False
 ):
     """
     Run a function in a separate process with memory and time limits.
@@ -50,7 +57,7 @@ def run_with_resource_limits(
     result_queue = multiprocessing.Queue()
     process = multiprocessing.Process(
         target=_worker_wrapper,
-        args=(func, args, kwargs, result_queue)
+        args=(func, args, kwargs, result_queue, silence_output)
     )
     
     process.start()
