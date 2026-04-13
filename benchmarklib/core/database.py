@@ -192,7 +192,13 @@ class DatabaseManager:
         
 
 class BackendPropertyManager(DatabaseManager):
-    def latest(self, backend: Backend | str, as_of: Optional[datetime] = None) -> Optional[BackendProperty]:
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.cache = {}
+
+    def latest(self, backend: Backend | str, as_of: Optional[datetime] = None, no_cache: Optional[bool] = False) -> Optional[BackendProperty]:
         """
         Get the latest backend properties as of a specific date.
         Args:
@@ -201,19 +207,35 @@ class BackendPropertyManager(DatabaseManager):
             as_of: Date to filter properties (None for latest overall)
         """
         backend_name = backend.name if isinstance(backend, Backend) else backend
+
+        if not no_cache and (backend_name, as_of) in self.cache:
+            return self.cache[(backend_name, as_of)]
+
         with self.session() as session:
             query = select(BackendProperty).where(BackendProperty.backend_name == backend_name).order_by(BackendProperty.last_update_date.desc())
             if as_of:
                 query = query.where(BackendProperty.last_update_date <= as_of)
             result = session.execute(query).scalars().first()
+
+            if not no_cache:
+                self.cache_add((backend_name, as_of), result)
+
             return result
+
+    def cache_add(self, key, value):
+        if len(self.cache) > 100:
+            self.cache_clear()
+        self.cache[key] = value
+
+    def cache_clear(self):
+        self.cache.clear()
         
     def load_missing_dates(self, backend: Backend, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> None:
         """
         Load missing backend properties for days without data.
 
         Args:
-            backend: Backend to load properties for
+            backend: Backend to load properties for (must be Backend object for property access)
             start_date: Start date for loading (None for earliest available)
             end_date: End date for loading (None for latest available)
         """
