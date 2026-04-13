@@ -221,6 +221,13 @@ class BaseProblem(Base):
         raise NotImplementedError(
             f"{self.__class__.__name__} must implement get_verifier_src() -> str."
         )
+    
+    def get_verifier_params(self) -> Dict[str, Any]:
+        """
+        :return: Compile-time constants or parameters to be used when compiling the verifier function from get_verifier_src
+        :rtype: Dict[str, Any]
+        """
+        return {}
 
     def __str__(self) -> str:
         """Human-readable string representation."""
